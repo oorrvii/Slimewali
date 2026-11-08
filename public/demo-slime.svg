@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Demo slime illustration">
+  <rect width="800" height="800" fill="#D5E66D"/>
+  <path d="M150 470C130 330 250 210 400 220C560 230 680 330 650 500C625 640 500 700 380 690C250 680 165 600 150 470Z" fill="#A99BEA" stroke="#343A35" stroke-width="12"/>
+  <ellipse cx="300" cy="360" rx="70" ry="38" fill="#ffffff" opacity="0.55" transform="rotate(-25 300 360)"/>
+  <circle cx="540" cy="300" r="26" fill="#E98B62" stroke="#343A35" stroke-width="8"/>
+  <circle cx="250" cy="570" r="16" fill="#F2EBDD" stroke="#343A35" stroke-width="6"/>
+</svg>

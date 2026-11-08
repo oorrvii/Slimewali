@@ -1,0 +1,384 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isShortString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function validProfileCreate(data) {
+      return data.keys().hasOnly(['displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['displayName', 'email', 'createdAt', 'updatedAt'])
+        && isShortString(data.displayName, 100)
+        && data.email == request.auth.token.email
+        && (!('photoURL' in data) || isShortString(data.photoURL, 2048))
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function validProfileUpdate() {
+      let data = request.resource.data;
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'phone', 'instagram', 'photoURL', 'defaultAddressId', 'updatedAt'])
+        && isShortString(data.displayName, 100)
+        && (!('phone' in data) || isShortString(data.phone, 20))
+        && (!('instagram' in data) || (data.instagram is string && data.instagram.matches('^[A-Za-z0-9._]{1,30}$')))
+        && (!('photoURL' in data) || isShortString(data.photoURL, 2048))
+        && (!('defaultAddressId' in data) || isShortString(data.defaultAddressId, 64))
+        && data.updatedAt == request.time;
+    }
+
+    function validAddress(data) {
+      return data.keys().hasOnly([
+          'fullName', 'phone', 'line1', 'line2', 'landmark', 'city', 'state',
+          'pinCode', 'country', 'isDefault', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'fullName', 'phone', 'line1', 'city', 'state', 'pinCode', 'country',
+          'isDefault', 'createdAt', 'updatedAt'
+        ])
+        && isShortString(data.fullName, 100) && data.fullName.size() > 0
+        && data.phone is string && data.phone.matches('^(\\+91)?[6-9][0-9]{9}$')
+        && isShortString(data.line1, 200) && data.line1.size() > 0
+        && (!('line2' in data) || isShortString(data.line2, 200))
+        && (!('landmark' in data) || isShortString(data.landmark, 100))
+        && isShortString(data.city, 80) && data.city.size() > 0
+        && isShortString(data.state, 80) && data.state.size() > 0
+        && data.pinCode is string && data.pinCode.matches('^[1-9][0-9]{5}$')
+        && data.country == 'India'
+        && data.isDefault is bool
+        && data.updatedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && validProfileCreate(request.resource.data);
+      allow update: if isOwner(uid) && validProfileUpdate();
+      allow delete: if false;
+
+      match /addresses/{addressId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if isOwner(uid) && validAddress(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(uid) && validAddress(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    function isSlug(value) {
+      return value is string && value.size() > 0 && value.size() <= 60
+        && value.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
+    }
+
+    function validCategory(d) {
+      return d.keys().hasOnly([
+          'name', 'slug', 'description', 'imagePath', 'accentColor', 'sortOrder',
+          'isActive', 'showOnHome', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'
+        ])
+        && d.keys().hasAll([
+          'name', 'slug', 'accentColor', 'sortOrder', 'isActive', 'showOnHome',
+          'createdAt', 'updatedAt'
+        ])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && isSlug(d.slug)
+        && d.get('description', '') is string && d.get('description', '').size() <= 500
+        && (d.get('imagePath', null) == null || d.get('imagePath', null) is string)
+        && d.accentColor in ['#D5E66D', '#A99BEA', '#E98B62', '#F2EBDD', '#343A35']
+        && d.sortOrder is int
+        && d.isActive is bool
+        && d.showOnHome is bool
+        && d.createdAt is timestamp
+        && d.updatedAt is timestamp;
+    }
+
+    function validProduct(d) {
+      return d.keys().hasOnly([
+          'name', 'slug', 'shortDescription', 'description', 'categoryId',
+          'categoryNameSnapshot', 'imagePaths', 'coverImagePath', 'altTexts', 'pricePaise',
+          'compareAtPricePaise', 'hasVariants', 'variants', 'stockQuantity',
+          'lowStockThreshold', 'status', 'isFeatured', 'sortOrder', 'tags',
+          'careInstructions', 'seoTitle', 'seoDescription', 'createdAt', 'updatedAt',
+          'createdBy', 'updatedBy'
+        ])
+        && d.keys().hasAll([
+          'name', 'slug', 'categoryId', 'pricePaise', 'hasVariants', 'status',
+          'createdAt', 'updatedAt'
+        ])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && isSlug(d.slug)
+        && d.categoryId is string && d.categoryId.size() > 0
+        && d.pricePaise is int && d.pricePaise >= 0 && d.pricePaise <= 100000000
+        && (!('compareAtPricePaise' in d) || d.compareAtPricePaise is int)
+        && d.hasVariants is bool
+        && d.status in ['draft', 'published', 'archived']
+        && d.get('imagePaths', []) is list && d.get('imagePaths', []).size() <= 12
+        && (d.status != 'published' || d.get('imagePaths', []).size() >= 1)
+        && d.get('variants', []) is list && d.get('variants', []).size() <= 20
+        && d.get('tags', []) is list && d.get('tags', []).size() <= 20
+        && d.get('stockQuantity', 0) is int && d.get('stockQuantity', 0) >= 0
+        && d.get('lowStockThreshold', 0) is int && d.get('lowStockThreshold', 0) >= 0
+        && d.get('sortOrder', 0) is int
+        && d.get('isFeatured', false) is bool
+        && d.get('description', '') is string && d.get('description', '').size() <= 5000
+        && d.get('shortDescription', '') is string && d.get('shortDescription', '').size() <= 200
+        && d.createdAt is timestamp
+        && d.updatedAt is timestamp;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if resource.data.isActive == true || isAdmin();
+      allow create, update: if isAdmin() && validCategory(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow create, update: if isAdmin() && validProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /slugIndex/{indexId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['kind', 'refId'])
+        && request.resource.data.kind in ['category', 'product']
+        && request.resource.data.refId is string;
+      allow delete: if isAdmin();
+    }
+
+    function validShipping(a) {
+      return a is map
+        && a.keys().hasOnly([
+          'fullName', 'phone', 'line1', 'line2', 'landmark', 'city', 'state', 'pinCode', 'country'
+        ])
+        && a.keys().hasAll(['fullName', 'phone', 'line1', 'city', 'state', 'pinCode', 'country'])
+        && isShortString(a.fullName, 100) && a.fullName.size() > 0
+        && a.phone is string && a.phone.matches('^(\\+91)?[6-9][0-9]{9}$')
+        && isShortString(a.line1, 200) && a.line1.size() > 0
+        && (!('line2' in a) || isShortString(a.line2, 200))
+        && (!('landmark' in a) || isShortString(a.landmark, 100))
+        && isShortString(a.city, 80) && a.city.size() > 0
+        && isShortString(a.state, 80) && a.state.size() > 0
+        && a.pinCode is string && a.pinCode.matches('^[1-9][0-9]{5}$')
+        && a.country == 'India';
+    }
+
+    function validOrderCreate(orderId, d) {
+      return d.keys().hasOnly([
+          'orderNumber', 'customerUid', 'customerName', 'customerEmail', 'customerPhone', 'customerInstagram',
+          'shippingAddress', 'note', 'items', 'itemCount', 'subtotalPaise', 'totalPaise',
+          'orderStatus', 'paymentStatus', 'contactStatus', 'consentAccepted', 'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll([
+          'orderNumber', 'customerUid', 'customerName', 'customerEmail', 'customerPhone',
+          'shippingAddress', 'items', 'itemCount', 'subtotalPaise', 'totalPaise',
+          'orderStatus', 'paymentStatus', 'contactStatus', 'consentAccepted', 'createdAt', 'updatedAt'
+        ])
+        && orderId.matches('^SW-[0-9]{6}-[A-Z0-9]{5}$')
+        && d.orderNumber == orderId
+        && d.customerUid == request.auth.uid
+        && d.customerEmail == request.auth.token.email
+        && isShortString(d.customerName, 100) && d.customerName.size() > 0
+        && d.customerPhone is string && d.customerPhone.matches('^(\\+91)?[6-9][0-9]{9}$')
+        && (!('customerInstagram' in d)
+          || (d.customerInstagram is string && d.customerInstagram.matches('^[A-Za-z0-9._]{1,30}$')))
+        && validShipping(d.shippingAddress)
+        && (!('note' in d) || isShortString(d.note, 500))
+        && d.items is list && d.items.size() >= 1 && d.items.size() <= 20
+        && d.itemCount is int && d.itemCount >= 1 && d.itemCount <= 200
+        && d.subtotalPaise is int && d.subtotalPaise >= 0 && d.subtotalPaise <= 1000000000
+        && d.totalPaise == d.subtotalPaise
+        && d.orderStatus == 'pending_review'
+        && d.paymentStatus == 'not_requested'
+        && d.contactStatus == 'not_contacted'
+        && d.consentAccepted == true
+        && d.createdAt == request.time
+        && d.updatedAt == request.time;
+    }
+
+    function orderTransitionOk(from, to) {
+      return from == to
+        || (from == 'pending_review' && to in ['approved_awaiting_payment', 'rejected', 'cancelled'])
+        || (from == 'approved_awaiting_payment' && to in ['payment_verified', 'cancelled'])
+        || (from == 'payment_verified' && to in ['processing', 'cancelled'])
+        || (from == 'processing' && to in ['dispatched', 'cancelled'])
+        || (from == 'dispatched' && to == 'delivered');
+    }
+
+    function validOrderAdminUpdate() {
+      let d = request.resource.data;
+      let before = resource.data;
+      return d.diff(before).affectedKeys().hasOnly([
+          'orderStatus', 'paymentStatus', 'contactStatus', 'shippingPaise', 'finalTotalPaise',
+          'totalChangeReason', 'adminNote', 'customerVisibleNote', 'stockDeducted',
+          'courierName', 'trackingReference', 'trackingUrl', 'cancelReason', 'stockReturned', 'updatedAt'
+        ])
+        && orderTransitionOk(before.orderStatus, d.orderStatus)
+        && (d.orderStatus == before.orderStatus || d.orderStatus != 'payment_verified' || d.paymentStatus == 'paid')
+        && (d.orderStatus == before.orderStatus || d.orderStatus != 'dispatched'
+          || (d.get('courierName', '') is string && d.get('courierName', '').size() > 0))
+        && (d.orderStatus == before.orderStatus || d.orderStatus != 'cancelled'
+          || (d.get('cancelReason', '') is string && d.get('cancelReason', '').size() > 0))
+        && (d.paymentStatus == before.paymentStatus
+          || (d.paymentStatus == 'paid' && before.paymentStatus == 'awaiting_payment'
+              && d.orderStatus == 'payment_verified')
+          || (d.paymentStatus == 'refunded' && before.paymentStatus == 'paid'
+              && d.orderStatus == 'cancelled')
+          || (d.paymentStatus == 'awaiting_payment' && before.orderStatus == 'pending_review'
+              && d.orderStatus == 'approved_awaiting_payment')
+          || (d.paymentStatus == 'not_requested' && before.paymentStatus == 'awaiting_payment'
+              && d.orderStatus == 'cancelled')
+          || d.paymentStatus == 'payment_issue')
+        && d.get('courierName', '') is string && d.get('courierName', '').size() <= 100
+        && d.get('trackingReference', '') is string && d.get('trackingReference', '').size() <= 100
+        && d.get('trackingUrl', '') is string && d.get('trackingUrl', '').size() <= 500
+        && (d.get('trackingUrl', '') == '' || d.trackingUrl.matches('^https?://.*'))
+        && d.get('cancelReason', '') is string && d.get('cancelReason', '').size() <= 500
+        && d.get('stockReturned', false) is bool
+        && d.paymentStatus in ['not_requested', 'awaiting_payment', 'paid', 'refunded', 'payment_issue']
+        && d.contactStatus in ['not_contacted', 'contact_attempted', 'payment_instructions_sent']
+        && (d.orderStatus != 'approved_awaiting_payment'
+          || (d.get('shippingPaise', null) is int && d.get('shippingPaise', -1) >= 0
+              && d.get('finalTotalPaise', null) is int && d.get('finalTotalPaise', -1) >= 0
+              && d.get('finalTotalPaise', 0) <= 1000000000))
+        && d.get('adminNote', '') is string && d.get('adminNote', '').size() <= 2000
+        && d.get('customerVisibleNote', '') is string && d.get('customerVisibleNote', '').size() <= 1000
+        && d.get('totalChangeReason', '') is string && d.get('totalChangeReason', '').size() <= 500
+        && d.updatedAt == request.time;
+    }
+
+    function validOrderEvent(orderId, e) {
+      return e.keys().hasOnly([
+          'type', 'message', 'visibility', 'fromStatus', 'toStatus', 'customerUid', 'actorUid', 'createdAt'
+        ])
+        && e.keys().hasAll(['type', 'message', 'visibility', 'customerUid', 'actorUid', 'createdAt'])
+        && isShortString(e.type, 60)
+        && isShortString(e.message, 1000)
+        && e.visibility in ['customer', 'internal']
+        && e.customerUid == get(/databases/$(database)/documents/orders/$(orderId)).data.customerUid
+        && e.actorUid == request.auth.uid
+        && e.createdAt == request.time;
+    }
+
+    match /orders/{orderId} {
+      allow read: if (isSignedIn() && resource.data.customerUid == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && validOrderCreate(orderId, request.resource.data);
+      allow update: if isAdmin() && validOrderAdminUpdate();
+      allow delete: if false;
+
+      match /events/{eventId} {
+        allow read: if isAdmin()
+          || (isSignedIn() && resource.data.customerUid == request.auth.uid
+              && resource.data.visibility == 'customer');
+        allow create: if isAdmin() && validOrderEvent(orderId, request.resource.data);
+        allow update, delete: if false;
+      }
+
+      match /contactLog/{logId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+
+    function optionalString(data, key, limit) {
+      return !(key in data) || (data[key] is string && data[key].size() <= limit);
+    }
+
+    function validSettings(data) {
+      return data.keys().hasOnly([
+          'storeName', 'announcementText', 'announcementActive', 'supportEmail', 'supportPhone',
+          'whatsappNumber', 'instagramHandle', 'shippingMode', 'flatShippingPaise',
+          'freeShippingThresholdPaise', 'shippingNote', 'heroEyebrow', 'heroLine1', 'heroLine2',
+          'heroLine3', 'heroSubheading', 'textureTitle', 'textureBody', 'saleActive', 'saleTitle',
+          'saleText', 'saleEndsOn', 'updatedAt', 'updatedBy'
+        ])
+        && optionalString(data, 'storeName', 60)
+        && optionalString(data, 'announcementText', 160)
+        && (!('announcementActive' in data) || data.announcementActive is bool)
+        && optionalString(data, 'supportEmail', 120)
+        && optionalString(data, 'supportPhone', 20)
+        && optionalString(data, 'whatsappNumber', 20)
+        && optionalString(data, 'instagramHandle', 30)
+        && (!('shippingMode' in data) || data.shippingMode in ['manual', 'flat', 'threshold'])
+        && (!('flatShippingPaise' in data)
+            || (data.flatShippingPaise is int && data.flatShippingPaise >= 0 && data.flatShippingPaise <= 100000000))
+        && (!('freeShippingThresholdPaise' in data)
+            || (data.freeShippingThresholdPaise is int && data.freeShippingThresholdPaise >= 0
+                && data.freeShippingThresholdPaise <= 1000000000))
+        && optionalString(data, 'shippingNote', 300)
+        && optionalString(data, 'heroEyebrow', 60)
+        && optionalString(data, 'heroLine1', 20)
+        && optionalString(data, 'heroLine2', 20)
+        && optionalString(data, 'heroLine3', 20)
+        && optionalString(data, 'heroSubheading', 240)
+        && optionalString(data, 'textureTitle', 80)
+        && optionalString(data, 'textureBody', 240)
+        && (!('saleActive' in data) || data.saleActive is bool)
+        && optionalString(data, 'saleTitle', 60)
+        && optionalString(data, 'saleText', 160)
+        && optionalString(data, 'saleEndsOn', 10);
+    }
+
+    function validContentPage(data) {
+      return data.keys().hasOnly(['title', 'body', 'items', 'isPublished', 'updatedAt', 'updatedBy'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 100
+        && data.body is string && data.body.size() <= 20000
+        && data.items is list && data.items.size() <= 40
+        && data.isPublished is bool;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && docId == 'store' && validSettings(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /content/{docId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow create, update: if isAdmin()
+        && docId in ['about', 'contact', 'faq', 'shipping', 'returns', 'privacy', 'terms']
+        && validContentPage(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /stockMovements/{docId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'productId', 'variantId', 'delta', 'reason', 'orderId', 'actorUid', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll(['productId', 'delta', 'reason', 'actorUid', 'createdAt'])
+        && request.resource.data.delta is int
+        && request.resource.data.reason is string && request.resource.data.reason.size() <= 100
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /counters/{docId} {
+      allow read, write: if false;
+    }
+
+    match /idempotencyKeys/{docId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
