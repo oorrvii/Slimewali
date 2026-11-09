@@ -1,7 +1,6 @@
 import { useSettings } from '@/features/settings/SettingsProvider'
 import { LinkButton } from '@/components/ui/Button'
 import { ArrowIcon } from '@/components/ui/icons'
-import { SlimeJarArt } from '@/components/graphics/SlimeJarArt'
 import { Asterisk, Blob, Ring, Spark, Squiggle, Sticker } from '@/components/graphics/shapes'
 
 export function Hero({ imageUrl, imageAlt }: { imageUrl?: string; imageAlt?: string }) {
@@ -47,11 +46,7 @@ export function Hero({ imageUrl, imageAlt }: { imageUrl?: string; imageAlt?: str
             <div className="absolute inset-[16%] overflow-hidden rounded-[2rem] border-2 border-char bg-cream shadow-pop">
               <img src={imageUrl} alt={imageAlt ?? ''} className="size-full object-cover" />
             </div>
-          ) : (
-            <div className="absolute inset-[16%] overflow-hidden rounded-[2rem] border-2 border-char bg-cream shadow-pop">
-              <SlimeJarArt className="size-full" />
-            </div>
-          )}
+          ) : null}
           <Sticker tone="lime" rotate={-8} className="absolute left-2 top-10">
             Handmade
           </Sticker>
