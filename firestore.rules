@@ -303,7 +303,7 @@ service cloud.firestore {
           'storeName', 'announcementText', 'announcementActive', 'supportEmail', 'supportPhone',
           'whatsappNumber', 'instagramHandle', 'shippingMode', 'flatShippingPaise',
           'freeShippingThresholdPaise', 'shippingNote', 'heroEyebrow', 'heroLine1', 'heroLine2',
-          'heroLine3', 'heroSubheading', 'textureTitle', 'textureBody', 'saleActive', 'saleTitle',
+          'heroLine3', 'heroSubheading', 'textureTitle', 'textureBody', 'heroImagePath', 'saleActive', 'saleTitle',
           'saleText', 'saleEndsOn', 'updatedAt', 'updatedBy'
         ])
         && optionalString(data, 'storeName', 60)
@@ -327,6 +327,7 @@ service cloud.firestore {
         && optionalString(data, 'heroSubheading', 240)
         && optionalString(data, 'textureTitle', 80)
         && optionalString(data, 'textureBody', 240)
+        && optionalString(data, 'heroImagePath', 300)
         && (!('saleActive' in data) || data.saleActive is bool)
         && optionalString(data, 'saleTitle', 60)
         && optionalString(data, 'saleText', 160)

@@ -39,6 +39,7 @@ function toSettings(data: DocumentData): StoreSettings {
     heroSubheading: text(data, 'heroSubheading'),
     textureTitle: text(data, 'textureTitle'),
     textureBody: text(data, 'textureBody'),
+    heroImagePath: text(data, 'heroImagePath'),
     saleActive: data.saleActive === true,
     saleTitle: text(data, 'saleTitle'),
     saleText: text(data, 'saleText'),

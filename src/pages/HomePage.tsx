@@ -42,8 +42,14 @@ export function HomePage() {
   return (
     <>
       <Hero
-        imageUrl={heroCover ? imageUrl(heroCover) : undefined}
-        imageAlt={heroProduct && heroCover ? altTextFor(heroProduct, heroCover) : undefined}
+        imageUrl={settings.heroImagePath ? imageUrl(settings.heroImagePath) : heroCover ? imageUrl(heroCover) : undefined}
+        imageAlt={
+          settings.heroImagePath
+            ? settings.storeName
+            : heroProduct && heroCover
+              ? altTextFor(heroProduct, heroCover)
+              : undefined
+        }
       />
 
       <SaleBand />

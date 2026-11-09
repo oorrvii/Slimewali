@@ -19,7 +19,7 @@ export function imageUrl(path: string, size: ImageSize = 'full'): string {
 type ProcessedImage = { full: Blob; small: Blob }
 
 export async function uploadImage(
-  folder: 'products' | 'categories',
+  folder: 'products' | 'categories' | 'site',
   ownerId: string,
   image: ProcessedImage,
   onProgress?: (fraction: number) => void,

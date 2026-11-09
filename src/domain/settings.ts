@@ -22,6 +22,7 @@ export type StoreSettings = {
   heroSubheading: string
   textureTitle: string
   textureBody: string
+  heroImagePath: string
   saleActive: boolean
   saleTitle: string
   saleText: string
@@ -48,6 +49,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     'Slime made by hand, shipped across India. Pick your texture, send an order request, and we will be in touch.',
   textureTitle: 'Every batch is made by hand.',
   textureBody: 'Browse the whole shop to find the texture you like best.',
+  heroImagePath: '',
   saleActive: false,
   saleTitle: '',
   saleText: '',
@@ -96,6 +98,7 @@ export function validateSettings(input: StoreSettings): SettingsErrors {
   max('heroSubheading', 240, 'The subheading')
   max('textureTitle', 80, 'The title')
   max('textureBody', 240, 'The text')
+  max('heroImagePath', 300, 'The image path')
   max('saleTitle', 60, 'The sale title')
   max('saleText', 160, 'The sale text')
   if (input.saleEndsOn && !isValidDate(input.saleEndsOn)) errors.saleEndsOn = 'Pick a valid date.'
