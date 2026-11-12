@@ -8,7 +8,6 @@ import { ArrowIcon } from '@/components/ui/icons'
 import { Asterisk, Starburst } from '@/components/graphics/shapes'
 import { imageUrl } from '@/data/media'
 import { listFeaturedProducts } from '@/data/products'
-import { altTextFor, coverPathOf } from '@/domain/catalogue'
 import { useActiveCategories } from '@/features/catalogue/useActiveCategories'
 import { useAsync } from '@/hooks/useAsync'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -36,21 +35,10 @@ export function HomePage() {
   const featuredList = [...(featured.data ?? [])].sort(
     (a, b) => a.sortOrder - b.sortOrder || b.createdAtMs - a.createdAtMs,
   )
-  const heroProduct = featuredList.find((product) => coverPathOf(product))
-  const heroCover = heroProduct ? coverPathOf(heroProduct) : null
 
   return (
     <>
-      <Hero
-        imageUrl={settings.heroImagePath ? imageUrl(settings.heroImagePath) : heroCover ? imageUrl(heroCover) : undefined}
-        imageAlt={
-          settings.heroImagePath
-            ? settings.storeName
-            : heroProduct && heroCover
-              ? altTextFor(heroProduct, heroCover)
-              : undefined
-        }
-      />
+      <Hero />
 
       <SaleBand />
 

@@ -188,7 +188,7 @@ service cloud.firestore {
           'shippingAddress', 'items', 'itemCount', 'subtotalPaise', 'totalPaise',
           'orderStatus', 'paymentStatus', 'contactStatus', 'consentAccepted', 'createdAt', 'updatedAt'
         ])
-        && orderId.matches('^SW-[0-9]{6}-[A-Z0-9]{5}$')
+        && orderId.matches('^[A-Z]{2,4}-[0-9]{6}-[A-Z0-9]{5}$')
         && d.orderNumber == orderId
         && d.customerUid == request.auth.uid
         && d.customerEmail == request.auth.token.email
@@ -303,7 +303,7 @@ service cloud.firestore {
           'storeName', 'announcementText', 'announcementActive', 'supportEmail', 'supportPhone',
           'whatsappNumber', 'instagramHandle', 'shippingMode', 'flatShippingPaise',
           'freeShippingThresholdPaise', 'shippingNote', 'heroEyebrow', 'heroLine1', 'heroLine2',
-          'heroLine3', 'heroSubheading', 'textureTitle', 'textureBody', 'heroImagePath', 'saleActive', 'saleTitle',
+          'heroLine3', 'heroSubheading', 'textureTitle', 'textureBody', 'saleActive', 'saleTitle',
           'saleText', 'saleEndsOn', 'updatedAt', 'updatedBy'
         ])
         && optionalString(data, 'storeName', 60)
@@ -327,7 +327,6 @@ service cloud.firestore {
         && optionalString(data, 'heroSubheading', 240)
         && optionalString(data, 'textureTitle', 80)
         && optionalString(data, 'textureBody', 240)
-        && optionalString(data, 'heroImagePath', 300)
         && (!('saleActive' in data) || data.saleActive is bool)
         && optionalString(data, 'saleTitle', 60)
         && optionalString(data, 'saleText', 160)

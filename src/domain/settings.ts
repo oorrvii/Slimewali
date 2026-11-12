@@ -1,3 +1,4 @@
+import { brand } from '@/config/brand'
 import { INSTAGRAM_ERROR, normalizeInstagram, normalizePhone } from './address'
 import { formatPaise } from './money'
 
@@ -22,7 +23,6 @@ export type StoreSettings = {
   heroSubheading: string
   textureTitle: string
   textureBody: string
-  heroImagePath: string
   saleActive: boolean
   saleTitle: string
   saleText: string
@@ -30,8 +30,8 @@ export type StoreSettings = {
 }
 
 export const DEFAULT_SETTINGS: StoreSettings = {
-  storeName: 'Slimewali',
-  announcementText: 'Shipping across India · Prepaid orders only, Cash on Delivery is not available',
+  storeName: brand.storeName,
+  announcementText: brand.announcement,
   announcementActive: true,
   supportEmail: '',
   supportPhone: '',
@@ -41,15 +41,13 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   flatShippingPaise: 0,
   freeShippingThresholdPaise: 0,
   shippingNote: '',
-  heroEyebrow: 'Handmade in small batches',
-  heroLine1: 'Squish.',
-  heroLine2: 'Stretch.',
-  heroLine3: 'Repeat.',
-  heroSubheading:
-    'Slime made by hand, shipped across India. Pick your texture, send an order request, and we will be in touch.',
-  textureTitle: 'Every batch is made by hand.',
-  textureBody: 'Browse the whole shop to find the texture you like best.',
-  heroImagePath: '',
+  heroEyebrow: brand.heroEyebrow,
+  heroLine1: brand.heroLines[0],
+  heroLine2: brand.heroLines[1],
+  heroLine3: brand.heroLines[2],
+  heroSubheading: brand.heroSubheading,
+  textureTitle: brand.textureTitle,
+  textureBody: brand.textureBody,
   saleActive: false,
   saleTitle: '',
   saleText: '',
@@ -98,7 +96,6 @@ export function validateSettings(input: StoreSettings): SettingsErrors {
   max('heroSubheading', 240, 'The subheading')
   max('textureTitle', 80, 'The title')
   max('textureBody', 240, 'The text')
-  max('heroImagePath', 300, 'The image path')
   max('saleTitle', 60, 'The sale title')
   max('saleText', 160, 'The sale text')
   if (input.saleEndsOn && !isValidDate(input.saleEndsOn)) errors.saleEndsOn = 'Pick a valid date.'

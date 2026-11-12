@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { brand } from '@/config/brand'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Notice } from '@/components/ui/Notice'
 import { Select } from '@/components/ui/Select'
 import { Toggle } from '@/components/ui/Toggle'
-import { imageUrl, uploadImage } from '@/data/media'
 import { getSettings, saveSettings } from '@/data/settings'
-import { ImageRejectedError, processImage } from '@/features/admin/imageProcessing'
 import { paiseToInput, parseRupeesToPaise } from '@/domain/money'
 import {
   DEFAULT_SETTINGS,
@@ -42,9 +41,6 @@ export function AdminSettingsPage() {
   const [amountErrors, setAmountErrors] = useState<{ flat?: string; threshold?: string }>({})
   const [errors, setErrors] = useState<SettingsErrors>({})
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const fileRef = useRef<HTMLInputElement | null>(null)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -57,24 +53,6 @@ export function AdminSettingsPage() {
 
   function set<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  async function onPickImage(file: File) {
-    setUploading(true)
-    setUploadError('')
-    try {
-      const processed = await processImage(file)
-      const path = await uploadImage('site', 'home-banner', processed)
-      set('heroImagePath', path)
-    } catch (caught) {
-      setUploadError(
-        caught instanceof ImageRejectedError || (caught instanceof Error && caught.message.startsWith('Cloudinary'))
-          ? caught.message
-          : 'The image could not be uploaded. Try again.',
-      )
-    } finally {
-      setUploading(false)
-    }
   }
 
   async function onSubmit(event: FormEvent) {
@@ -142,7 +120,7 @@ export function AdminSettingsPage() {
           <Input label="Support email" type="email" value={form.supportEmail} error={errors.supportEmail} onChange={(e) => set('supportEmail', e.target.value)} />
           <Input label="Phone" type="tel" value={form.supportPhone} error={errors.supportPhone} maxLength={20} onChange={(e) => set('supportPhone', e.target.value)} />
           <Input label="WhatsApp number" type="tel" hint="10-digit Indian mobile number" value={form.whatsappNumber} error={errors.whatsappNumber} onChange={(e) => set('whatsappNumber', e.target.value)} />
-          <Input label="Shop Instagram" hint="Username only, for example slimewali" value={form.instagramHandle} error={errors.instagramHandle} onChange={(e) => set('instagramHandle', e.target.value)} />
+          <Input label="Shop Instagram" hint={`Username only, for example ${brand.instagramExample}`} value={form.instagramHandle} error={errors.instagramHandle} onChange={(e) => set('instagramHandle', e.target.value)} />
         </Section>
 
         <Section title="Shipping" hint="Shipping is always confirmed by you when you approve an order. These settings only decide what the shop says and what is pre-filled for you.">
@@ -164,44 +142,7 @@ export function AdminSettingsPage() {
           </div>
         </Section>
 
-        <Section title="Home page" hint="The words and photo in the big banner, and the purple panel.">
-          <div className="space-y-3 sm:col-span-2">
-            <p className="font-semibold">Banner photo</p>
-            <p className="text-sm text-char-soft">
-              A close-up photo of your slime works best, roughly square. Without one, the banner shows your featured
-              product's photo, or a drawing if there is none. Save the settings after choosing.
-            </p>
-            {form.heroImagePath ? (
-              <img
-                src={imageUrl(form.heroImagePath, 'small')}
-                alt="Current banner photo"
-                className="size-40 rounded-xl border-2 border-char object-cover"
-              />
-            ) : null}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="sr-only"
-              aria-label="Choose banner photo"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void onPickImage(file)
-                event.target.value = ''
-              }}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" loading={uploading} onClick={() => fileRef.current?.click()}>
-                {form.heroImagePath ? 'Replace photo' : 'Choose photo'}
-              </Button>
-              {form.heroImagePath ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => set('heroImagePath', '')}>
-                  Remove photo
-                </Button>
-              ) : null}
-            </div>
-            {uploadError ? <p className="text-sm font-semibold text-orange-ink">{uploadError}</p> : null}
-          </div>
+        <Section title="Home page" hint="The words in the big banner, and the purple panel.">
           <div className="sm:col-span-2">
             <Input label="Small line above the headline" value={form.heroEyebrow} error={errors.heroEyebrow} maxLength={60} onChange={(e) => set('heroEyebrow', e.target.value)} />
           </div>

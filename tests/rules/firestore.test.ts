@@ -378,8 +378,6 @@ describe('settings and content', () => {
   it('settings accept sale fields and reject bad ones', async () => {
     const db = env.authenticatedContext('owner', admin).firestore()
     await assertSucceeds(setDoc(doc(db, 'settings/store'), { saleActive: true, saleTitle: 'Diwali sale', saleText: 'Up to 30% off', saleEndsOn: '2026-12-31' }))
-    await assertSucceeds(setDoc(doc(db, 'settings/store'), { heroImagePath: 'site/home-banner/photo' }))
-    await assertFails(setDoc(doc(db, 'settings/store'), { heroImagePath: 'x'.repeat(301) }))
     await assertFails(setDoc(doc(db, 'settings/store'), { saleActive: 'yes' }))
     await assertFails(setDoc(doc(db, 'settings/store'), { saleTitle: 'x'.repeat(61) }))
     await assertFails(setDoc(doc(db, 'settings/store'), { saleEndsOn: '2026-12-31T00:00:00' }))
